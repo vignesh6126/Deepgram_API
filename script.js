@@ -1,5 +1,5 @@
 // Replace with your Deepgram API key or load from env
-let DEEPGRAM_API_KEY = '351facc5e07ee4fbad98202aef9174ac014de11c';
+let DEEPGRAM_API_KEY = 'import.meta.env.VITE_DEEPGRAM_API_KEY;';
 
 // Deepgram websocket URL with query parameters for model and punctuation
 const DEEPGRAM_ENDPOINT_BASE = 'wss://api.deepgram.com/v1/listen?model=nova-2&punctuate=true';
