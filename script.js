@@ -1,196 +1,187 @@
-// Start with empty string; will override if env var is present
-let DEEPGRAM_API_KEY = '';
+const DEEPGRAM_API_KEY = import.meta.env.VITE_DEEPGRAM_API_KEY;
 
-// Deepgram websocket URL base (no token here)
+if (!DEEPGRAM_API_KEY) {
+    alert('⚠️ Please set your Deepgram API key in the .env file.');
+}
+
 const DEEPGRAM_ENDPOINT_BASE = 'wss://api.deepgram.com/v1/listen?model=nova-2&punctuate=true';
 
-const micButton = document.getElementById('micButton');
+const audioFileInput = document.getElementById('audioFile');
+const uploadBtn = document.getElementById('uploadBtn');
+const recordBtn = document.getElementById('recordBtn');
 const transcript = document.getElementById('transcript');
 const statusElement = document.getElementById('status');
 
-let isListening = false;
+let isRecording = false;
 let socket = null;
 let mediaStream = null;
 let audioContext = null;
 
-async function initApp() {
-  // Override API key if environment variable is set (works with Vite)
-  if (typeof import.meta !== 'undefined' && import.meta.env) {
-    DEEPGRAM_API_KEY = import.meta.env.VITE_DEEPGRAM_API_KEY || DEEPGRAM_API_KEY;
-  }
-
-  if (!DEEPGRAM_API_KEY) {
-    showKeyError();
-    return;
-  }
-
-  micButton.disabled = false;
-  micButton.addEventListener('click', toggleListening);
-  updateUI('ready');
-}
-
-async function toggleListening() {
-  if (isListening) {
-    await stopListening();
-  } else {
-    await startListening();
-  }
-}
-
-async function startListening() {
-  try {
-    isListening = true;
-    updateUI('starting');
-
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-    mediaStream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        sampleRate: 16000,
-        channelCount: 1,
-      },
-      video: false,
-    });
-
-    // Build the full Deepgram websocket URL
-    // Token passed as a subprotocol in WebSocket constructor
-    socket = new WebSocket(DEEPGRAM_ENDPOINT_BASE, ['token', DEEPGRAM_API_KEY]);
-
-    socket.binaryType = 'arraybuffer';
-
-    socket.onopen = () => {
-      console.log('✅ WebSocket connected');
-      updateUI('listening');
-      setupAudioProcessing();
-    };
-
-    socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.channel?.alternatives[0]?.transcript && data.is_final) {
-          const text = data.channel.alternatives[0].transcript.trim();
-          console.log('✅ Final Transcript:', text);
-          transcript.value += (transcript.value ? ' ' : '') + text;
-          transcript.scrollTop = transcript.scrollHeight;
-        }
-      } catch (err) {
-        console.error('Error parsing message:', err);
-      }
-    };
-
-    socket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      updateUI('error', 'WebSocket error occurred');
-      stopListening();
-    };
-
-    socket.onclose = (event) => {
-      console.log('WebSocket closed:', event.reason);
-      if (isListening) {
-        updateUI('error', 'Connection closed');
-        stopListening();
-      }
-    };
-  } catch (err) {
-    console.error('Start listening failed:', err);
-    updateUI('error', err.message);
-    stopListening();
-  }
-}
-
-function setupAudioProcessing() {
-  try {
-    const source = audioContext.createMediaStreamSource(mediaStream);
-    const processor = audioContext.createScriptProcessor(4096, 1, 1);
-
-    processor.onaudioprocess = (event) => {
-      if (socket && socket.readyState === WebSocket.OPEN) {
-        const audioData = event.inputBuffer.getChannelData(0);
-        const raw = convertTo16BitPCM(audioData);
-        socket.send(raw);
-      }
-    };
-
-    source.connect(processor);
-    processor.connect(audioContext.destination);
-  } catch (err) {
-    console.error('Audio processing setup error:', err);
-    updateUI('error', 'Audio setup failed');
-    stopListening();
-  }
-}
-
-async function stopListening() {
-  isListening = false;
-
-  if (socket) {
-    socket.close();
-    socket = null;
-  }
-
-  if (mediaStream) {
-    mediaStream.getTracks().forEach((track) => track.stop());
-    mediaStream = null;
-  }
-
-  if (audioContext) {
-    if (audioContext.state !== 'closed') {
-      await audioContext.close();
+uploadBtn.addEventListener('click', async () => {
+    const file = audioFileInput.files[0];
+    if (!file) {
+        alert('Please select an audio file first!');
+        return;
     }
-    audioContext = null;
-  }
 
-  updateUI('ready');
+    transcript.value = '';
+    statusElement.textContent = 'Transcribing...';
+    console.log('📁 Uploading audio file for transcription...');
+
+    try {
+        const result = await transcribeAudioFile(file);
+        transcript.value = result;
+        statusElement.textContent = 'Transcription complete!';
+        console.log('✅ Final transcript:', result);
+    } catch (err) {
+        console.error(err);
+        statusElement.textContent = 'Error during transcription.';
+    }
+});
+
+async function transcribeAudioFile(file) {
+    return new Promise((resolve, reject) => {
+        const socket = new WebSocket(DEEPGRAM_ENDPOINT_BASE, ['token', DEEPGRAM_API_KEY]);
+        let transcriptText = '';
+
+        socket.binaryType = 'arraybuffer';
+
+        socket.onopen = () => {
+            console.log('✅ WebSocket connected for file upload');
+            const reader = new FileReader();
+            reader.onload = () => {
+                socket.send(new Uint8Array(reader.result));
+                socket.send(new Uint8Array()); // Send zero byte to signal end
+            };
+            reader.onerror = reject;
+            reader.readAsArrayBuffer(file);
+        };
+
+        socket.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                const text = data.channel?.alternatives[0]?.transcript;
+                if (text) {
+                    transcriptText += text + ' ';
+                    console.log('📝 File Transcript Chunk:', text);
+                }
+            } catch (err) {
+                console.error('❌ Error parsing message:', err);
+            }
+        };
+
+        socket.onerror = (error) => reject('WebSocket error: ' + error.message);
+
+        socket.onclose = (event) => {
+            console.log('🔒 WebSocket closed:', event.reason);
+            resolve(transcriptText.trim());
+        };
+    });
+}
+
+// 🎙️ Live Microphone Transcription
+recordBtn.addEventListener('click', async () => {
+    if (isRecording) {
+        await stopRecording();
+    } else {
+        await startRecording();
+    }
+});
+
+async function startRecording() {
+    try {
+        isRecording = true;
+        transcript.value = '';
+        recordBtn.textContent = '⏹️ Stop Recording';
+        statusElement.textContent = 'Listening...';
+        console.log('🎙️ Starting live microphone transcription...');
+
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const source = audioContext.createMediaStreamSource(mediaStream);
+
+        socket = new WebSocket(DEEPGRAM_ENDPOINT_BASE, ['token', DEEPGRAM_API_KEY]);
+        socket.binaryType = 'arraybuffer';
+
+        socket.onopen = () => {
+            console.log('✅ WebSocket connected for live transcription');
+            const processor = audioContext.createScriptProcessor(4096, 1, 1);
+            source.connect(processor);
+            processor.connect(audioContext.destination);
+
+            processor.onaudioprocess = (event) => {
+                const input = event.inputBuffer.getChannelData(0);
+                const buffer = convertTo16BitPCM(input);
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(buffer);
+                    console.log('🎧 Sending audio chunk to Deepgram');
+                }
+            };
+        };
+
+        socket.onclose = () => {
+            console.log('🔒 WebSocket closed');
+            stopRecording();
+        };
+
+        socket.onmessage = (event) => {
+  try {
+    const data = JSON.parse(event.data);
+    console.log('📩 Message from Deepgram:', data);
+
+    const transcriptData = data.channel?.alternatives?.[0]?.transcript;
+    if (transcriptData && transcriptData.length > 0) {
+      console.log('📝 Live Transcript Chunk:', transcriptData);
+      transcript.value += (transcript.value ? ' ' : '') + transcriptData;
+      transcript.scrollTop = transcript.scrollHeight;
+    }
+  } catch (err) {
+    console.error('❌ Failed to parse transcript:', err);
+  }
+};
+
+
+        socket.onerror = (error) => {
+            console.error('❌ WebSocket error:', error);
+            stopRecording();
+        };
+
+        socket.onclose = () => {
+            console.log('🔒 WebSocket closed');
+            stopRecording();
+        };
+    } catch (err) {
+        console.error('❌ Error starting recording:', err);
+        stopRecording();
+    }
+}
+
+async function stopRecording() {
+    isRecording = false;
+    recordBtn.textContent = '🎙️ Start Recording';
+    statusElement.textContent = 'Recording stopped.';
+
+    if (socket) {
+        socket.close();
+        socket = null;
+    }
+
+    if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        mediaStream = null;
+    }
+
+    if (audioContext) {
+        await audioContext.close();
+        audioContext = null;
+    }
 }
 
 function convertTo16BitPCM(float32Array) {
-  const int16Buffer = new Int16Array(float32Array.length);
-  for (let i = 0; i < float32Array.length; i++) {
-    let s = Math.max(-1, Math.min(1, float32Array[i]));
-    int16Buffer[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-  }
-  return int16Buffer.buffer;
+    const int16Array = new Int16Array(float32Array.length);
+    for (let i = 0; i < float32Array.length; i++) {
+        const s = Math.max(-1, Math.min(1, float32Array[i]));
+        int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+    }
+    return int16Array.buffer;
 }
-
-function updateUI(state, message) {
-  switch (state) {
-    case 'starting':
-      micButton.textContent = 'Initializing...';
-      micButton.disabled = true;
-      statusElement.textContent = 'Setting up...';
-      break;
-    case 'listening':
-      micButton.textContent = '🛑 Stop Listening';
-      micButton.disabled = false;
-      statusElement.textContent = message || 'Listening...';
-      break;
-    case 'ready':
-      micButton.textContent = '🎤 Start Listening';
-      micButton.disabled = false;
-      statusElement.textContent = message || 'Ready when you are';
-      break;
-    case 'error':
-      micButton.textContent = '🎤 Start Listening';
-      micButton.disabled = false;
-      statusElement.textContent = message || 'Error occurred';
-      statusElement.style.color = '#ff5555';
-      setTimeout(() => (statusElement.style.color = ''), 2000);
-      break;
-  }
-}
-
-function showKeyError() {
-  statusElement.textContent = '⚠️ Please configure your Deepgram API key';
-  statusElement.style.color = '#ff5555';
-  micButton.disabled = true;
-}
-
-// Initialize on DOM ready
-document.addEventListener('DOMContentLoaded', initApp);
-
-// Clean up on unload
-window.addEventListener('beforeunload', () => {
-  if (isListening) stopListening();
-});

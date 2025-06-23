@@ -1,21 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice Tech Wizard</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Voice Tech Wizard</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-    <h1>Voice Tech Wizard</h1>
-    <p>Press the button and speak. Watch your words appear like magic!</p>
-    
-    <button id="micButton">🎤 Start Listening</button>
-    <p id="status" class="status">Ready when you are</p>
-    
-    <textarea id="transcript" placeholder="Your transcribed text will appear here..."></textarea>
-    
-    <script type="module" src="/script.js"></script>
+  <h1>Voice Tech Wizard</h1>
+  <p>Select an audio file or record your voice and click "Transcribe".</p>
 
+  <!-- Upload and Transcribe Section -->
+  <div style="margin-bottom: 20px;">
+    <label for="audioFile" class="custom-upload">📁 Upload Audio</label>
+    <input type="file" id="audioFile" accept="audio/*" hidden />
+    <button id="uploadBtn">Transcribe</button>
+  </div>
+
+  <!-- Record and Transcribe Section -->
+  <div style="margin-bottom: 20px;">
+    <button id="recordBtn">🎙️ Start Recording</button>
+  </div>
+
+  <!-- Transcript Display -->
+  <textarea
+    id="transcript"
+    placeholder="Your transcribed text will appear here..."
+    rows="10"
+    cols="80"
+    readonly
+  ></textarea>
+
+  <p id="status" class="status">Ready when you are</p>
+
+  <script type="module" src="script.js"></script>
 </body>
 </html>

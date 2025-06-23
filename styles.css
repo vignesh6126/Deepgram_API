@@ -1,56 +1,131 @@
 body {
-    font-family: 'Courier New', monospace;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-    background-color: #121212;
-    color: #0f0;
-    text-align: center;
+  font-family: 'Courier New', monospace;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #121212;
+  color: #0f0;
+  text-align: center;
 }
 
 h1 {
-    color: #0f0;
-    text-shadow: 0 0 5px #0f0;
+  color: #0f0;
+  text-shadow: 0 0 5px #0f0;
 }
 
 #transcript {
-    width: 100%;
-    height: 300px;
-    margin: 20px 0;
-    padding: 15px;
-    background-color: #000;
-    color: #0f0;
-    border: 1px solid #0f0;
-    border-radius: 5px;
-    font-size: 16px;
-    resize: none;
+  width: 100%;
+  height: 300px;
+  margin: 20px 0;
+  padding: 15px;
+  background-color: #000;
+  color: #0f0;
+  border: 1px solid #0f0;
+  border-radius: 5px;
+  font-size: 16px;
+  resize: none;
 }
 
+/* Upload label styled as a small clean button */
+.custom-upload {
+  display: inline-block;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #000;
+  background-color: #0f0;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: background-color 0.3s, box-shadow 0.3s;
+  box-shadow: 0 0 6px #0f0;
+  margin-right: 10px;
+}
+
+.custom-upload:hover {
+  background-color: #0a0;
+  box-shadow: 0 0 12px #0f0;
+}
+
+/* Hide native file input */
+#audioFile {
+  display: none;
+}
+
+/* Transcribe button styled to match */
+#uploadBtn {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: bold;
+  background-color: #0f0;
+  color: #000;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: background-color 0.3s, box-shadow 0.3s;
+  box-shadow: 0 0 6px #0f0;
+}
+
+#uploadBtn:hover {
+  background-color: #0a0;
+  box-shadow: 0 0 12px #0f0;
+}
+
+/* Mic button (in case you still keep it) */
 #micButton {
-    background-color: #0f0;
-    color: #000;
-    border: none;
-    padding: 15px 30px;
-    font-size: 18px;
-    font-weight: bold;
-    border-radius: 50px;
-    cursor: pointer;
-    transition: all 0.3s;
-    box-shadow: 0 0 10px #0f0;
+  background-color: #0f0;
+  color: #000;
+  border: none;
+  padding: 15px 30px;
+  font-size: 18px;
+  font-weight: bold;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 0 10px #0f0;
 }
 
 #micButton:hover {
-    background-color: #0a0;
-    box-shadow: 0 0 20px #0f0;
+  background-color: #0a0;
+  box-shadow: 0 0 20px #0f0;
 }
 
 #micButton.listening {
-    background-color: #f00;
-    box-shadow: 0 0 20px #f00;
-    color: white;
+  background-color: #f00;
+  box-shadow: 0 0 20px #f00;
+  color: white;
 }
 
 .status {
-    margin-top: 10px;
-    font-style: italic;
+  margin-top: 10px;
+  font-style: italic;
 }
+
+/* Mobile Responsive */
+@media (max-width: 600px) {
+  .custom-upload,
+  #uploadBtn {
+    display: block;
+    width: 100%;
+    margin: 10px 0;
+    font-size: 16px;
+    padding: 12px 0;
+  }
+}
+#recordBtn {
+  background-color: #0f0;
+  color: #000;
+  border: none;
+  padding: 15px 30px;
+  font-size: 18px;
+  font-weight: bold;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 0 10px #0f0;
+}
+
+#recordBtn:hover {
+  background-color: #0a0;
+  box-shadow: 0 0 20px #0f0;
+}
+
