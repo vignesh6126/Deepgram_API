@@ -1,7 +1,7 @@
-// Replace with your Deepgram API key or load from env
-let DEEPGRAM_API_KEY = 'import.meta.env.VITE_DEEPGRAM_API_KEY;';
+// Start with empty string; will override if env var is present
+let DEEPGRAM_API_KEY = '';
 
-// Deepgram websocket URL with query parameters for model and punctuation
+// Deepgram websocket URL base (no token here)
 const DEEPGRAM_ENDPOINT_BASE = 'wss://api.deepgram.com/v1/listen?model=nova-2&punctuate=true';
 
 const micButton = document.getElementById('micButton');
@@ -14,12 +14,12 @@ let mediaStream = null;
 let audioContext = null;
 
 async function initApp() {
-  // If using Vite or similar, override key here
+  // Override API key if environment variable is set (works with Vite)
   if (typeof import.meta !== 'undefined' && import.meta.env) {
     DEEPGRAM_API_KEY = import.meta.env.VITE_DEEPGRAM_API_KEY || DEEPGRAM_API_KEY;
   }
 
-  if (!DEEPGRAM_API_KEY || DEEPGRAM_API_KEY === 'YOUR_DEEPGRAM_API_KEY') {
+  if (!DEEPGRAM_API_KEY) {
     showKeyError();
     return;
   }
@@ -54,10 +54,9 @@ async function startListening() {
       video: false,
     });
 
-    // Build full Deepgram WS URL including token
-    const DEEPGRAM_ENDPOINT = 'wss://api.deepgram.com/v1/listen?model=nova-2&punctuate=true';
-// Pass the API key as a subprotocol string in the constructor
-socket = new WebSocket(DEEPGRAM_ENDPOINT, ['token', DEEPGRAM_API_KEY]);
+    // Build the full Deepgram websocket URL
+    // Token passed as a subprotocol in WebSocket constructor
+    socket = new WebSocket(DEEPGRAM_ENDPOINT_BASE, ['token', DEEPGRAM_API_KEY]);
 
     socket.binaryType = 'arraybuffer';
 
