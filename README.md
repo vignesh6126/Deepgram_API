@@ -25,7 +25,7 @@ All with a retro neon-terminal UI!
 ### 1. Clone the Repo
 
 ```bash
-git clone https://github.com/yourusername/voice-tech-wizard.git
+git clone https://github.com/vignesh6126/voice-tech-wizard.git
 cd voice-tech-wizard
 ```
 
@@ -81,6 +81,12 @@ Then open your browser at: `http://localhost:5173`
 
 ---
 
+###  Audio Transcription Result
+
+![Audio Transcription](./Screenshots/deep-gram-4.png)
+
+---
+
 ## 🧠 Tech Stack
 
 - **Frontend:** HTML, CSS, JavaScript (ES6+)
@@ -108,6 +114,3 @@ More info: [Deepgram Docs](https://developers.deepgram.com)
 
 ---
 
-## 📄 License
-
-MIT License. Feel free to use and contribute.
